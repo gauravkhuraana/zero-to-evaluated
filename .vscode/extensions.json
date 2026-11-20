@@ -1,0 +1,5 @@
+{
+  // VS Code shows a pop-up "This workspace has extension recommendations" when you open the folder.
+  // Click "Install": the notebook path (workshop.ipynb) needs both.
+  "recommendations": ["ms-python.python", "ms-toolsai.jupyter"]
+}

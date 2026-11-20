@@ -1,0 +1,15 @@
+.env
+__pycache__/
+.pytest_cache/
+.deepeval/
+.venv/
+*.mine
+.notebook_bot.log
+.notebook_bot.pid
+.planted_bug
+evaluate/report.html
+dist/
+wheelhouse/
+
+# Local-only speaker notes and conference preparation.
+/speaker/

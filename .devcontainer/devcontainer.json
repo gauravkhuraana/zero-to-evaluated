@@ -1,0 +1,41 @@
+{
+  "name": "ShopKart agent workshop",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+
+  // Same one-command setup as on a laptop: creates .venv, installs the packages, registers the notebook kernel, creates .env.
+  // updateContentCommand (not postCreateCommand) so a Codespaces PREBUILD already contains the installed .venv.
+  // Terminals then activate .venv by themselves, so every command in COMMANDS_MAC.md works unchanged.
+  "updateContentCommand": "python3.12 setup_env.py --skip-check",
+
+  // Ask for the Groq key when the Codespace is created (free key: https://console.groq.com/keys).
+  // Use the SAME key for both. Secrets arrive as environment variables and win over the .env file.
+  "secrets": {
+    "LLM_API_KEY": {
+      "description": "Your free Groq key (starts with gsk_). Powers the agent. https://console.groq.com/keys"
+    },
+    "JUDGE_API_KEY": {
+      "description": "The same free Groq key again. Powers the AI judge (Part 2)."
+    }
+  },
+
+  "forwardPorts": [8000, 8080],
+  "portsAttributes": {
+    "8000": { "label": "ShopKart agent API (/docs)", "onAutoForward": "openBrowser" },
+    "8080": { "label": "Scoreboard (report.html)", "onAutoForward": "notify" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter"],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "jupyter.notebookFileRoot": "${containerWorkspaceFolder}"
+      }
+    },
+    "codespaces": {
+      "openFiles": ["README.md", "workshop.ipynb"]
+    }
+  }
+}
