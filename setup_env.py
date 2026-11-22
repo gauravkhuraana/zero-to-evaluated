@@ -30,11 +30,11 @@ IS_WINDOWS = sys.platform.startswith("win")
 if IS_WINDOWS:
     VENV_PYTHON = VENV / "Scripts" / "python.exe"
     ACTIVATE = r".venv\Scripts\Activate.ps1"
-    COMMANDS_FILE = "COMMANDS_WINDOWS.md"
+    COMMANDS_FILE = "README.md"
 else:
     VENV_PYTHON = VENV / "bin" / "python"
     ACTIVATE = "source .venv/bin/activate"
-    COMMANDS_FILE = "COMMANDS_MAC.md"
+    COMMANDS_FILE = "README.md"
 
 # Flush every line so our messages stay in order with pip's output.
 sys.stdout.reconfigure(line_buffering=True)
@@ -83,7 +83,7 @@ if version_pair != (3, 12) or version.releaselevel != "final":
         "A stable Python 3.12.x is required for the workshop.\n"
         "      Install it alongside your existing Python; no uninstall or default-version change is needed.\n"
         "      Windows: winget install --id Python.Python.3.12 --version 3.12.10 --exact --source winget\n"
-        "      Mac: see PRE_CONFERENCE.md step 1. Then open a NEW terminal and run:\n"
+        "      Mac: see SETUP.md step 1. Then open a NEW terminal and run:\n"
         f"      {setup_command}\n"
         "      See TROUBLESHOOTING.md #1."
     )
@@ -238,7 +238,7 @@ def read_env_file_values():
     return values
 
 
-# A real environment variable wins over .env, the same way shared/config.py reads them.
+# A real environment variable wins over .env, the same way the programs read them.
 env_file_values = read_env_file_values()
 keys_ready = True
 for name in ("LLM_API_KEY", "JUDGE_API_KEY"):
@@ -279,6 +279,6 @@ print(f"""
 {numbered_steps}
 
 Check again at any time:   python check_setup.py
-All commands, step by step: {COMMANDS_FILE}
+All the workshop steps: {COMMANDS_FILE}
 -----------------------------------------------------------------
 """)

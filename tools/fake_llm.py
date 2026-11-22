@@ -4,7 +4,10 @@ Presenter tool · A FAKE OpenAI-compatible model, to rehearse or test every step
     cd tools
     uvicorn fake_llm:app --port 9999
     then in .env:  LLM_BASE_URL=http://localhost:9999/v1   and   LLM_MODEL=fake
-  - Single agent (v1/v2) -> v1 guesses (invents price-matching, refunds anything); v2 searches the policy first.
+  - step1 chatbot -> one of three differently worded answers (so 'assertEquals fails' shows up offline too)
+  - step2 agent   -> search_policy, then get_order, then refund or answer from ShopKart's rules
+  - step3 crew    -> Researcher finds the 4-digit number, Decider applies the rules, Checker approves
+  (The older AutomationSTAR prompts below still work too.)
 
 It is not intelligent: it follows simple scripted rules so the plumbing can be tested end to end.
   - Request Planner    -> a short plan
@@ -274,6 +277,89 @@ def single_agent(system, messages):
         return _answer("The return window for this order has passed, so no refund is possible.")
     return _answer(tool_calls=_tool("issue_refund", order_id=order_id, amount=order["price_paid"]))
 
+
+# ---------------------------------------------------------------------------
+# The workshop programs: step1 chatbot, step2 agent, step3 crew (Researcher, Decider, Checker)
+# ---------------------------------------------------------------------------
+CHATBOT_REPLIES = [
+    "You can return most items within 30 days of delivery for a full refund.",
+    "Most items can be returned within 30 days. Just share your order number with us!",
+    "Sure! Returns are possible within 30 days of delivery, as long as the item is unused.",
+]
+
+
+def fake_decision(order):
+    """ShopKart's rules applied to one order: returns (first line, message)."""
+    if not isinstance(order, dict) or "status" not in order:
+        return "HUMAN", "I couldn't find that order, so a colleague will look into it."
+    damaged = order["condition"] in ("damaged", "wrong_item")
+    if order["status"] == "refunded":
+        return "NO REFUND", "This order has already been refunded."
+    if order["status"] != "delivered":
+        return "NO REFUND", "Your order is still on its way, so it can't be refunded yet."
+    if order["category"] == "digital":
+        return "NO REFUND", "Digital gift cards are non-refundable once issued."
+    if order["final_sale"] and not damaged:
+        return "NO REFUND", "Clearance items are final sale and can't be refunded."
+    if order["days_since_delivery"] > (14 if damaged else 30):
+        return "NO REFUND", "The return window for this order has passed."
+    return "REFUND", "Your refund of " + str(order["price_paid"]) + " EUR is on its way."
+
+
+def workshop_agent(messages):
+    """step2_agent: search_policy first, then get_order, then refund or answer."""
+    user = next(m["content"] for m in messages if m["role"] == "user")
+    id_match = re.search(r"\b(\d{4})\b", user)
+    order_id = id_match.group(1) if id_match else None
+
+    called = []
+    for m in messages:
+        if m["role"] == "assistant":
+            for tool_call in m.get("tool_calls") or []:
+                called.append(tool_call["function"]["name"])
+    results = dict(zip(called, [m["content"] for m in messages if m["role"] == "tool"]))
+
+    if "search_policy" not in called:
+        return _answer(tool_calls=_tool("search_policy", question=user))
+    if order_id and "get_order" not in called:
+        return _answer(tool_calls=_tool("get_order", order_id=order_id))
+    if "issue_refund" in called:
+        return _answer(json.loads(results["issue_refund"]))
+    if not order_id:
+        pages = json.loads(results["search_policy"])
+        if ("price" in user.lower() and "match" in user.lower()) or not pages:
+            return _answer("I don't know: our policy pages don't cover that. A colleague can help you.")
+        lines = [line for line in pages[0].splitlines() if line and not line.startswith("#")]
+        return _answer(lines[0])
+    order = json.loads(results["get_order"])
+    first_line, message = fake_decision(order)
+    if first_line == "REFUND":
+        return _answer(tool_calls=_tool("issue_refund", order_id=order_id, amount=order["price_paid"]))
+    return _answer(message)
+
+
+def workshop_route(system, messages):
+    """Returns a reply for the workshop programs, or None if the prompt is not one of theirs."""
+    last = messages[-1]["content"] or ""
+    if system.startswith("You are ShopKart's friendly support assistant"):
+        return _answer(random.choice(CHATBOT_REPLIES))
+    if system.startswith("You are ShopKart's support agent"):
+        return workshop_agent(messages)
+    if system.startswith("Find the order number"):
+        id_match = re.search(r"\b(\d{4})\b", last)
+        return _answer(id_match.group(1) if id_match else "none")
+    if system.startswith("You are the Decider"):
+        order_text = last.split("Order: ", 1)[1].split("\n\nPolicy pages:", 1)[0]
+        try:
+            order = json.loads(order_text)
+        except Exception:
+            order = order_text
+        first_line, message = fake_decision(order)
+        return _answer(first_line + "\n" + message)
+    if system.startswith("You are the Checker"):
+        return _answer("APPROVE")
+    return None
+
 # ---------------------------------------------------------------------------
 # The fake AI judge (Part 2): just enough of DeepEval's prompts to rehearse steps 7-9 offline
 # ---------------------------------------------------------------------------
@@ -406,6 +492,11 @@ async def completions(request: Request):
     # DeepEval's judge prompts (Part 2) have no system message and ask for JSON.
     if not system and "JSON" in last_message:
         return _answer(json.dumps(judge(last_message)))
+
+    # The workshop programs (step1 chatbot, step2 agent, step3 crew)
+    workshop_reply = workshop_route(system, messages)
+    if workshop_reply is not None:
+        return workshop_reply
 
     # The single agent (v1 and v2)
     if system.startswith("You are ShopKart's customer assistant"):

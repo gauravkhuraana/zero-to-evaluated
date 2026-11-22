@@ -9,7 +9,7 @@ From the project folder with `.venv` active, the setup check prints a FAQ number
 python check_setup.py
 ```
 
-Find that number below. Stuck for more than 3 minutes? Pair with a neighbour, or point the Part 2 tests at the hosted agent (#18).
+Find that number below. Stuck for more than 3 minutes? Pair with a neighbour, or switch to GitHub Codespaces (#18).
 Nothing in this workshop needs editing, so there is nothing to fall behind on: every command works on its own.
 
 ---
@@ -32,9 +32,9 @@ Nothing in this workshop needs editing, so there is nothing to fall behind on: e
 - [#13 · Judge error: "invalid JSON" / "could not parse"](#13--judge-error-invalid-json--could-not-parse)
 - [#14 · Error 429 / "rate limit"](#14--error-429--rate-limit)
 - [#15 · The tests are very slow](#15--the-tests-are-very-slow)
-- [#16 · `POST /chat` shows an error, or the flight recorder is empty](#16--post-chat-shows-an-error-or-the-flight-recorder-is-empty)
+- [#16 · `/docs` shows an error](#16--docs-shows-an-error)
 - [#17 · SSL / certificate errors on a company network](#17--ssl--certificate-errors-on-a-company-network)
-- [#18 · Using the hosted ShopKart agent instead of your own](#18--using-the-hosted-shopkart-agent-instead-of-your-own)
+- [#18 · My laptop can't run it at all](#18--my-laptop-cant-run-it-at-all)
 - [#19 · Tests are red for no reason / the agent says strange things](#19--tests-are-red-for-no-reason--the-agent-says-strange-things)
 - [#20 · The notebook can't find its kernel, or VS Code has no ▶ button](#20--the-notebook-cant-find-its-kernel-or-vs-code-has-no--button)
 - [#21 · LangSmith: no traces, or "401 / invalid API key"](#21--langsmith-no-traces-or-401--invalid-api-key)
@@ -141,14 +141,14 @@ Using **Ollama** (`localhost:11434`)? First open http://localhost:11434 in a bro
   **Leave that window open** (closing it stops Ollama). If it says *"Only one usage of each socket address (protocol/network address/port) is normally permitted"* (Windows) or `address already in use`, that is **good news**: Ollama is already running. Check the browser page.
 - Using LM Studio instead? Start its **local server** (Developer tab) and use Option C in `.env`.
 
-### #3b · `ModuleNotFoundError: No module named 'config'`
-Every file finds `shared/config.py` by itself, as long as the repo layout is intact. Run every command from the **project folder** (the one with `run.py` and `check_setup.py`) with `.venv` active. Check where you are:
+### #3b · `ModuleNotFoundError: No module named 'step2_agent'` (or `step1_chatbot`)
+Run every command from the **project folder** (the one with `app.py` and `check_setup.py`), with `.venv` active. Check where you are:
 
 ```bash
-ls run.py
+ls app.py
 ```
 
-(Windows: `Get-Item run.py`.) Not found? `cd` back to the project folder first.
+(Windows: `Get-Item app.py`.) Not found? `cd` back to the project folder first.
 
 ### #4 · Windows won't activate the virtual environment
 PowerShell says "running scripts is disabled on this system":
@@ -169,7 +169,7 @@ Or use Command Prompt instead:
 ### #5 · No admin rights on a company laptop
 - Python: the winget command and the official installer normally install Python for your own user. If your company blocks installs or asks for an administrator password, contact Gaurav and use the [browser fallback](SETUP.md#path-b--in-the-browser-github-codespaces). Do not try to bypass the restriction.
 - Ollama is for Path A (your own laptop) only, and may need admin rights. If installation is blocked, tell Gaurav and use Path B (browser) in [SETUP.md](SETUP.md); Groq stays the default.
-- Company firewall blocks sign-ups or downloads: pair with a neighbour for Part 1, then point your tests at the hosted bot for Part 2 (#18).
+- Company firewall blocks sign-ups or downloads: pair with a neighbour, or use GitHub Codespaces (#18).
 
 ### #6 · Switching between Groq and Ollama
 - **Groq** (the default, Option A in `.env`) runs in the cloud. Nothing to install, needs internet and a free key.
@@ -225,7 +225,7 @@ No output means it worked (or nothing was using the port). Now start your bot ag
 
 **Free the right port.** The setup check (`check_setup.py`) looks at port **8000**, and the bot uses 8000. Freeing a different port (for example 8080) will not fix a "Port 8000" error. Only if you started the scoreboard server in Codespaces and it says port 8080 is busy, use the same command with `8080` instead.
 
-Or leave the old program alone, use another port, and set `SHOPKART_URL=http://localhost:8001` in `.env`:
+Or leave the old program alone and use another port:
 
 ```bash
 uvicorn app:app --reload --port 8001
@@ -248,22 +248,17 @@ uvicorn app:app --reload --port 8001
   In steps 1-3 the Ollama model name is written in the file itself (`qwen3:4b`).
 
 ### #10 · The agent ignores the policy pages
-Only **v2** and **v3** have the policy book; **v1** has none on purpose. For v2, look at the flight recorder from `python run.py --version 2 "..."`:
-- Is there a `search_policy` tool call? If not, the model answered without looking it up. Small models sometimes skip tools.
-- What did the librarian bring? The `pages it read` line. Wrong pages in, confident wrong answer out.
-- A planted bug (`liar`, `no_pages`) may be active: see #19.
-- Small models still drift sometimes. That's a real finding, and exactly what the Part 2 judge catches.
+Look at the `[agent] runs tool:` lines when you run `python step2_agent/agent.py`:
+- No `search_policy` line? The model answered without looking it up. Small models sometimes skip tools: ask again, or say "check the policy".
+- Did you change `TOOLS` or `SYSTEM_PROMPT` in `agent.py` during step 5? Undo it (#19).
+- Small models still drift sometimes. That's a real finding, and exactly what the step 4 judge catches.
 
 ### #11 · The model doesn't call tools
 Not every model supports tool calling. The default Groq model (`openai/gpt-oss-20b`) does. On Ollama, use one that does: `qwen3:4b`, `qwen3:8b` or `llama3.1:8b`. Or switch back to Groq (#6).
 
-### #12 · The agent loops, or takes very long
-- v1 and v2 stop after `MAX_STEPS` model calls and hand the case to a human. The v3 crew stops after `MAX_ROUNDS` reviews.
-- Each run makes 3 to 8 model calls, so one order can take a while on a slow connection. Run one order instead of `all`:
-
-  ```bash
-  python run.py --version 3 1043
-  ```
+### #12 · The agent or the crew takes very long
+- The agent stops after 5 rounds; the crew's Decider gets at most 2 tries.
+- Each run makes 2 to 6 model calls, so it can take a while on a slow connection. Free plans also slow down when many people use them at once (#14).
 
 ### #13 · Judge error: "invalid JSON" / "could not parse"
 The judge model returned something that isn't valid JSON. Small local models do this often, which is why the default judge is a bigger hosted model. Check `JUDGE_MODEL` in `.env` points at Groq/Cerebras, not your local model.
@@ -276,56 +271,29 @@ Free tiers limit requests or tokens per minute. The project lets DeepEval retry 
   pytest --lf
   ```
 
-- Run fewer judge tests. The rule checks need no judge at all; from the project folder:
-
-  ```bash
-  pytest evaluate/rules --agent-version 2
-  ```
-
-  For a single judge question (`-k price` = **keyword filter**: run only tests whose name contains `price`):
-
-  ```bash
-  pytest evaluate/judge --agent-version 2 -k price
-  ```
-
 - If your provider needs longer backoff, set `DEEPEVAL_RETRY_MAX_ATTEMPTS` and `DEEPEVAL_RETRY_CAP_SECONDS` in `.env`
-- The judge trial (`--runs 2` = score each answer 2 times per judge instead of the default 3, so there are fewer calls):
-
-  ```bash
-  python evaluate/trial/judge_the_judge.py --runs 2
-  ```
 
 - Switch to the backup judge (Cerebras) in `.env`
 
 ### #15 · The tests are very slow
-The AI-judge tests make several judge calls per question. That's the "taxi meter" from the slides.
-- The Exercise 3 script judges only three questions by default. Add `--all` only when you have time.
-- Run the cheap checks first. The rules use no judge at all:
+The judge tests make several judge calls per question. That's the cost of an LLM judge.
+- Run one test at a time (`-k` = only tests whose name contains that word):
 
   ```bash
-  pytest evaluate/rules --agent-version 2
+  pytest step4_judge/test_answers.py -k clearance
   ```
 
-  For the journey tests, `-k "not task_completion"` skips the one test that calls the judge:
+- Step 5's tests mostly need no judge: only the `tool_correctness` and `finishes_the_task` tests call it.
 
-  ```bash
-  pytest evaluate/journey -k "not task_completion"
-  ```
-
-### #16 · `POST /chat` shows an error, or the flight recorder is empty
+### #16 · `/docs` shows an error
 - Is the API running? In its terminal you should see `Application startup complete`. Start it from the project folder:
 
   ```bash
-  uvicorn agent.app:app --reload
+  uvicorn app:app --reload
   ```
 
-- Try the same message without the API, for a clearer error:
-
-  ```bash
-  python run.py --version 3 1043
-  ```
-
-- The API terminal prints the full error for every failed request.
+- The API's terminal prints the full error for every failed request. Most often it's the key (#5) or the free-tier limit (#14).
+- Try the same question without the API, for a clearer error: `python step2_agent/agent.py`.
 
 ### #17 · SSL / certificate errors on a company network
 Your company inspects HTTPS traffic. Options:
@@ -333,23 +301,18 @@ Your company inspects HTTPS traffic. Options:
 - Ask IT for the company root certificate and set `SSL_CERT_FILE=path\to\cert.pem`.
 - Don't disable certificate checks.
 
-### #18 · Using the hosted ShopKart agent instead of your own
-If your laptop can't run the agent, the Part 2 scripts and tests can test the hosted one (normally they test your own API on localhost:8000):
-set `SHOPKART_URL=<URL from the slide>` in `.env`. The tests call the agent over HTTP, so they don't care where it runs.
-Planted bugs (`plant_bug.py`) only work on your own agent.
+### #18 · My laptop can't run it at all
+Use **GitHub Codespaces** (Path B in [SETUP.md](SETUP.md)): everything runs in your browser, nothing to install. You only need a free GitHub account.
+Or pair with a neighbour: every step works well in pairs.
 
 ### #19 · Tests are red for no reason / the agent says strange things
-A planted bug from Exercise 4 may still be active. From the project folder, show the active bug:
+A change from a **Try these** exercise may still be in the code (a deleted tool, a changed prompt, "60 days" in a policy page).
+- In VS Code: open the file and press Ctrl+Z (Mac Cmd+Z) until it's back.
+- Cloned with Git? Undo all your changes at once, from the project folder:
 
-```bash
-python plant_bug.py
-```
-
-Then restore the healthy agent:
-
-```bash
-python plant_bug.py off
-```
+  ```bash
+  git checkout -- .
+  ```
 
 ### #20 · The notebook can't find its kernel, or VS Code has no ▶ button
 The notebook (`workshop.ipynb`) needs two VS Code extensions and a Jupyter kernel. The setup command installs both when it can.
@@ -371,6 +334,6 @@ The notebook (`workshop.ipynb`) needs two VS Code extensions and a Jupyter kerne
 ### #21 · LangSmith: no traces, or "401 / invalid API key"
 Traces are optional: every exercise works without them.
 - In `.env`: `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY=` your key from https://smith.langchain.com/settings (starts with `lsv2_`).
-- Restart the API after changing `.env` (Ctrl+C, then `uvicorn agent.app:app --reload` again).
+- Restart the API after changing `.env` (Ctrl+C, then `uvicorn app:app --reload` again).
 - Your key belongs to more than one workspace? Also set `LANGSMITH_WORKSPACE_ID` (see `.env.example`).
 - Traces appear under the project name in `LANGSMITH_PROJECT` (default `shopkart-agent-workshop`), usually within a few seconds.

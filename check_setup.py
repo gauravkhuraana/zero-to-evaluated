@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-# shared/config.py reads the .env file, so make it importable.
-sys.path.insert(0, str(ROOT / "shared"))
+# tools/config.py reads the .env file, so make it importable.
+sys.path.insert(0, str(ROOT / "tools"))
 
 # One True/False per check; the final message needs to know if all of them passed.
 results = []
@@ -48,7 +48,7 @@ check(
 if not version_ok:
     print("       Install Python 3.12 alongside your existing Python; you do not need to uninstall it.")
     print("       Windows: winget install --id Python.Python.3.12 --version 3.12.10 --exact --source winget")
-    print("       Mac: see PRE_CONFERENCE.md step 1. Then open a NEW terminal and run the setup command:")
+    print("       Mac: see SETUP.md step 1. Then open a NEW terminal and run the setup command:")
     print("       Windows: py -3.12 setup_env.py | Mac/Linux: python3.12 setup_env.py")
     print("       An existing .venv keeps its old Python. See FAQ #1 before recreating it.")
 
@@ -166,7 +166,7 @@ if check("Judge API key set in .env", has_key, faq=7):
 
 
 # ---------------------------------------------------------------
-# 5b. LangSmith (traces, Part 1 Exercise 2): only checked when you switched it on
+# 5b. LangSmith (traces, step 3): only checked when you switched it on
 # ---------------------------------------------------------------
 import os  # noqa: E402
 
@@ -178,7 +178,7 @@ if os.getenv("LANGSMITH_TRACING", "").lower() == "true":
     except Exception as err:
         check("LangSmith key works (traces on)", False, faq=21, detail=str(err)[:80])
 else:
-    print("[INFO] LangSmith traces are off (LANGSMITH_TRACING=false). Fine: turn them on for Exercise 2, see FAQ #21.")
+    print("[INFO] LangSmith traces are off (LANGSMITH_TRACING=false). Fine: turn them on for step 3, see FAQ #21.")
 
 
 # ---------------------------------------------------------------

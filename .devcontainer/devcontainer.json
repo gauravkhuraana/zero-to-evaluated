@@ -14,13 +14,13 @@
       "description": "Your free Groq key (starts with gsk_). Powers the agent. https://console.groq.com/keys"
     },
     "JUDGE_API_KEY": {
-      "description": "The same free Groq key again. Powers the AI judge (Part 2)."
+      "description": "The same free Groq key again. Powers the AI judge (steps 4 and 5)."
     }
   },
 
   "forwardPorts": [8000, 8080],
   "portsAttributes": {
-    "8000": { "label": "ShopKart agent API (/docs)", "onAutoForward": "openBrowser" },
+    "8000": { "label": "ShopKart API (/docs)", "onAutoForward": "openBrowser" },
     "8080": { "label": "Scoreboard (report.html)", "onAutoForward": "notify" }
   },
 

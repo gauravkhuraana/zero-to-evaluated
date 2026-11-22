@@ -194,7 +194,7 @@ Every line **OK**? You are ready. A line says **FAIL**? It shows a number: look 
 > From now on, **every new terminal** needs the activate command first, from the project folder, before running Python scripts or tests. You see **`(.venv)`** at the start of the line when it worked. **Optional:** if VS Code asks which interpreter to use, choose the one in `.venv`. You can ignore the prompt: the terminal commands work without it. It only makes the editor's Run button and import underlines behave.
 
 ### 7 · Get your free LangSmith key (both paths)
-LangSmith shows every step your agent takes as a **trace** in the browser. We use it in Part 1. It is free (one seat, 5,000 traces a month; no credit card).
+LangSmith shows every step your agent takes as a **trace** in the browser. We use it in step 3. It is free (one seat, 5,000 traces a month; no credit card).
 
 1. Create a free account and an API key: https://smith.langchain.com/settings (the key starts with `lsv2_`).
 2. In `.env`, set `LANGSMITH_TRACING=true` and replace `lsv2_your_key_here` with your key. Save.
